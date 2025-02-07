@@ -1,13 +1,13 @@
-name: Run Python Script Daily
+name: Run Python Script Every 5 Minutes
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # 每天 UTC 00:00 執行
-  workflow_dispatch:  # 允許手動執行
+    - cron: '*/5 * * * *'  # 每 5 分鐘執行一次
+  workflow_dispatch:  # 允許手動觸發
 
 jobs:
   run-script:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # 使用最新的 Ubuntu 環境執行
 
     steps:
       - name: Checkout Repository
@@ -16,10 +16,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '3.9'
+          python-version: '3.9'  # 可根據需求修改 Python 版本
 
       - name: Install Dependencies
         run: pip install -r requirements.txt || echo "No requirements.txt found"
 
       - name: Run Python Script
-        run: python script.py
+        run: python app.py
