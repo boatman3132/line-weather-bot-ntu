@@ -143,8 +143,8 @@ def sendBroadcastMessage():
             last_sent_date = now - datetime.timedelta(hours=3)  # 設定為 3 小時前，避免影響判斷
 
         time_diff = (now - last_sent_date).total_seconds() / 60  # 轉換為分鐘
-        if time_diff <= 0.1 :  # 5 小時內不重複發送
-            print("過去 5 小時內已發送過警報，不重複發送")
+        if time_diff <= 120 :  # 5 小時內不重複發送
+            print("過去 2 小時內已發送過警報，不重複發送")
             return
 
     # 更新 lastSentTime 並確保格式統一
