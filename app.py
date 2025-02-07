@@ -80,8 +80,8 @@ def sendBroadcastMessage():
         time_diff = (now - last_sent_date).total_seconds() / 60  # 轉換為分鐘
 
         # 如果小於 120 分鐘 ，則不發送
-        # 注意：原程式判斷條件為 timeDiff <= 0.02，雖然註解寫「過去 2 小時內」
-        if time_diff <= 0.02:
+        # 注意：原程式判斷條件為 timeDiff <= 2，雖然註解寫「過去 2 小時內」
+        if time_diff <= 2:
             print("過去 2 小時內已發送過警報，不重複發送")
             return
 
