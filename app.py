@@ -16,8 +16,18 @@ import time
 # --------------------------
 # 定義共用常數
 # --------------------------
-CHANNEL_ACCESS_TOKEN = "m7mL7uj+S4utCL4fzeHcz7YebNzUWoncm+jsEcFoqXa3UzEmlgTLaRFyFEshKi6XJeXCth/v4Zj1vGpPxPAPVvSFky7hvMPDncXsmPdnrNgQEjqP4nbixNPeRuXdkY4hKQeQnx9quTC22aDkuIkCTwdB04t89/1O/w1cDnyilFU="
-GROUP_ID = "C1744d43a6e011fb9e2819c43974ead95"
+
+# DS4xuDmTEm1JdSjB4nicpJSCWEFfkoK71AgNDslimzElHInP/irAjQ0RjeBzZuZ4kk3cZrOyQGYMMA5wnKoML0N+0L9SZSWt3Kuv+1e4QD4c9LuJahduzJ44VGu1wPbbKL6zBe9M7TiCA7nPzJqOxQdB04t89/1O/w1cDnyilFU= 新的line帳號
+# m7mL7uj+S4utCL4fzeHcz7YebNzUWoncm+jsEcFoqXa3UzEmlgTLaRFyFEshKi6XJeXCth/v4Zj1vGpPxPAPVvSFky7hvMPDncXsmPdnrNgQEjqP4nbixNPeRuXdkY4hKQeQnx9quTC22aDkuIkCTwdB04t89/1O/w1cDnyilFU= 舊的line帳號
+
+CHANNEL_ACCESS_TOKEN = "DS4xuDmTEm1JdSjB4nicpJSCWEFfkoK71AgNDslimzElHInP/irAjQ0RjeBzZuZ4kk3cZrOyQGYMMA5wnKoML0N+0L9SZSWt3Kuv+1e4QD4c9LuJahduzJ44VGu1wPbbKL6zBe9M7TiCA7nPzJqOxQdB04t89/1O/w1cDnyilFU="
+
+# 測試群組id C1744d43a6e011fb9e2819c43974ead95
+# 正式群組id C538d8773e17d6697fac0175c4077fd73
+
+GROUP_ID = "C538d8773e17d6697fac0175c4077fd73"
+
+
 LINE_PUSH_URL = 'https://api.line.me/v2/bot/message/push'
 weather_url = ('https://opendata.cwa.gov.tw/api/v1/rest/datastore/W-C0033-002'
                 '?Authorization=CWA-BAD98D16-5AC9-46D7-80AB-F96CB1286F16'
@@ -143,8 +153,8 @@ def sendBroadcastMessage():
             last_sent_date = now - datetime.timedelta(hours=3)  # 設定為 3 小時前，避免影響判斷
 
         time_diff = (now - last_sent_date).total_seconds() / 60  # 轉換為分鐘
-        if time_diff <= 120 :  # 5 小時內不重複發送
-            print("過去 2 小時內已發送過警報，不重複發送")
+        if time_diff <= 300 :  # 5 小時內不重複發送
+            print("過去 5 小時內已發送過警報，不重複發送")
             return
 
     # 更新 lastSentTime 並確保格式統一
@@ -275,33 +285,33 @@ def sendBroadcastMessage():
 # 這個函式負責構建訊息並發送到 LINE 的群組。
 # @param payload 要發送的訊息內容
 # --------------------------
-# def sendLineMessage(payload):
-#     # 設定發送 HTTP 請求的參數
-#     headers = {
-#         "Content-Type": "application/json",  # 設定為 JSON 格式
-#         "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN  # 授權使用 Channel Access Token
-#     }
-#
-#     try:
-#         # 使用 requests 發送 POST 請求到 LINE API
-#         response = requests.post(LINE_PUSH_URL, headers=headers, json=payload)
-#         if response.status_code == 200:
-#             print("LINE 訊息發送成功")
-#         else:
-#             print("LINE 訊息發送失敗，狀態碼：", response.status_code, response.text)
-#     except Exception as error:
-#         print("LINE 訊息發送失敗：", error)
-#
+def sendLineMessage(payload):
+    # 設定發送 HTTP 請求的參數
+    headers = {
+        "Content-Type": "application/json",  # 設定為 JSON 格式
+        "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN  # 授權使用 Channel Access Token
+    }
+
+    try:
+        # 使用 requests 發送 POST 請求到 LINE API
+        response = requests.post(LINE_PUSH_URL, headers=headers, json=payload)
+        if response.status_code == 200:
+            print("LINE 訊息發送成功")
+        else:
+            print("LINE 訊息發送失敗，狀態碼：", response.status_code, response.text)
+    except Exception as error:
+        print("LINE 訊息發送失敗：", error)
+
 # --------------------------
 # 以下為被註解掉的測試用 log 版本，原本是不會發送 LINE 訊息，只是記錄訊息內容
 # --------------------------
-def sendLineMessage(payload):
-    # 遍歷所有訊息，記錄內容
-    for message in payload.get("messages", []):
-        if message.get("type") == "text":
-            print("[訊息內容] " + message.get("text", ""))
-        elif message.get("type") == "image":
-            print("[圖片網址] " + message.get("originalContentUrl", ""))
+# def sendLineMessage(payload):
+#     # 遍歷所有訊息，記錄內容
+#     for message in payload.get("messages", []):
+#         if message.get("type") == "text":
+#             print("[訊息內容] " + message.get("text", ""))
+#         elif message.get("type") == "image":
+#             print("[圖片網址] " + message.get("originalContentUrl", ""))
 
 
 # --------------------------
@@ -404,15 +414,17 @@ def sendBroadcastMessage_maximum_accumulated_rainfall():
     }
     sendLineMessage(header_payload)
 
-    # 分批發送其他報告訊息，避免超過最大訊息數
-    max_messages_per_push = 4  # 4 + 1 前置訊息剛好 5 則
-    for i in range(0, len(report_messages), max_messages_per_push):
-        batch = report_messages[i:i+max_messages_per_push]
-        payload = {
-            "to": GROUP_ID,
-            "messages": [{"type": "text", "text": text} for text in batch]
-        }
-        sendLineMessage(payload)  # 發送每一批報告訊息
+    # 將所有報告訊息合併成一個字串
+    combined_message = "\n".join(report_messages)
+
+    # 建立 payload
+    payload = {
+        "to": GROUP_ID,
+        "messages": [{"type": "text", "text": combined_message}]
+    }
+
+    # 發送合併後的訊息
+    sendLineMessage(payload)
 
 # --------------------------
 # 主程式進入點
