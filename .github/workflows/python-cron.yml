@@ -2,7 +2,7 @@ name: Run Python Script Every 5 Minutes
 
 on:
   schedule:
-    - cron: '*/1 * * * *'  # 每 5 分鐘執行一次
+    - cron: '*/5 * * * *'  # 每 5 分鐘執行一次
   workflow_dispatch:  # 允許手動執行
 
 jobs:
