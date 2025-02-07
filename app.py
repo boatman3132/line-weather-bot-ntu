@@ -2,15 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-轉換自 Google Apps Script 程式碼
-
-原始程式碼功能：
-  - 檢查天氣 API 資料、組合警報訊息、查找各項圖片並發送 LINE 訊息
-  - 同時也會發送各縣市最高累積雨量資訊
-
 請注意：
   - 本程式使用 requests 模組進行 HTTP 請求
-  - 為了模擬 Google Apps Script 的 PropertiesService，本程式使用檔案儲存方式儲存全域變數 (例如 lastSentTime)
   - 若尚未安裝 requests 模組，請先執行： pip install requests
 """
 
@@ -26,9 +19,16 @@ import time
 CHANNEL_ACCESS_TOKEN = "m7mL7uj+S4utCL4fzeHcz7YebNzUWoncm+jsEcFoqXa3UzEmlgTLaRFyFEshKi6XJeXCth/v4Zj1vGpPxPAPVvSFky7hvMPDncXsmPdnrNgQEjqP4nbixNPeRuXdkY4hKQeQnx9quTC22aDkuIkCTwdB04t89/1O/w1cDnyilFU="
 GROUP_ID = "C1744d43a6e011fb9e2819c43974ead95"
 LINE_PUSH_URL = 'https://api.line.me/v2/bot/message/push'
+weather_url = ('https://opendata.cwa.gov.tw/api/v1/rest/datastore/W-C0033-002'
+                '?Authorization=CWA-BAD98D16-5AC9-46D7-80AB-F96CB1286F16'
+                '&phenomena=%E5%A4%A7%E9%9B%A8,%E8%B1%AA%E9%9B%A8,'
+                '%E5%A4%A7%E8%B1%AA%E9%9B%A8,%E8%B6%85%E5%A4%A7%E8%B1%AA%E9%9B%A8')
+
+
 
 # --------------------------
-# 模擬 Google Apps Script 的 PropertiesService
+# 定義 ScriptProperties 類別
+# 這個類別負責讀取、寫入 script_properties.json 檔案
 # --------------------------
 class ScriptProperties:
     def __init__(self, file_path='script_properties.json'):
@@ -50,40 +50,110 @@ class ScriptProperties:
         self.properties[key] = value
         try:
             with open(self.file_path, 'w', encoding='utf-8') as f:
-                json.dump(self.properties, f)
+                json.dump(self.properties, f, indent=4, ensure_ascii=False)
         except Exception as e:
             print("寫入 properties 檔案失敗：", e)
 
+
 # 建立全域 script_properties 物件
 script_properties = ScriptProperties()
+
+
+def get_weather_metadata():
+    """
+    獲取天氣 API 的元數據，包括：
+    - startTime: 警報開始時間
+    - endTime: 警報結束時間
+    - update: 最新更新時間
+    - affectedLocations: 受影響的地區（列表）
+
+    回傳:
+    - dict: 包含以上數據的字典，如果發生錯誤則回傳 None
+    """
+    try:
+        response = requests.get(weather_url)
+        weather_data = response.json()
+
+        if (weather_data.get("success") == "true" and
+            weather_data.get("records") and
+            weather_data["records"].get("record")):
+            records = weather_data["records"]["record"]
+
+            affected_locations = set()
+            last_start_time = None
+            last_end_time = None
+            last_update_time = None
+
+            for record in records:
+                dataset_info = record.get("datasetInfo", {})
+                last_start_time = dataset_info.get("validTime", {}).get("startTime")
+                last_end_time = dataset_info.get("validTime", {}).get("endTime")
+                last_update_time = dataset_info.get("update")
+
+                hazard_conditions = record.get("hazardConditions", {})
+                if (hazard_conditions and
+                    hazard_conditions.get("hazards") and
+                    hazard_conditions["hazards"].get("hazard")):
+                    hazards = hazard_conditions["hazards"]["hazard"]
+                    for hazard in hazards:
+                        if hazard["info"].get("affectedAreas") and hazard["info"]["affectedAreas"].get("location"):
+                            locations = [loc.get("locationName", "") for loc in hazard["info"]["affectedAreas"]["location"]]
+                            affected_locations.update(locations)
+
+            return {
+                "lastStartTime": last_start_time,
+                "lastEndTime": last_end_time,
+                "lastUpdateTime": last_update_time,
+                "affectedLocations": list(affected_locations)
+            }
+
+    except Exception as error:
+        print("天氣 API 請求失敗：", error)
+        return None
+
 
 # --------------------------
 # 主函式：檢查天氣 API 資料、組合警報訊息、查找各項圖片並發送 LINE 訊息
 # 這個函式將會檢查天氣資料並發送警報訊息到 LINE 群組。
 # --------------------------
 def sendBroadcastMessage():
-    weather_url = ('https://opendata.cwa.gov.tw/api/v1/rest/datastore/W-C0033-002'
-                   '?Authorization=CWA-BAD98D16-5AC9-46D7-80AB-F96CB1286F16'
-                   '&phenomena=%E5%A4%A7%E9%9B%A8,%E8%B1%AA%E9%9B%A8,'
-                   '%E5%A4%A7%E8%B1%AA%E9%9B%A8,%E8%B6%85%E5%A4%A7%E8%B1%AA%E9%9B%A8')
-    # 取得 script properties
-    last_sent_time = script_properties.get_property("lastSentTime")
     now = datetime.datetime.now()
 
-    # 檢查是否已發送過
+    # 讀取上次發送的資訊
+    last_sent_info = script_properties.get_property("lastSentInfo")
+
+    # 如果 last_sent_info 是字串，則轉換為字典
+    if isinstance(last_sent_info, str):
+        try:
+            last_sent_info = json.loads(last_sent_info)  # 只有字串才執行解析
+        except json.JSONDecodeError:
+            print("lastSentInfo 格式錯誤，重置為空字典")
+            last_sent_info = {}
+    elif last_sent_info is None:
+        last_sent_info = {}
+
+    last_sent_time = last_sent_info.get("lastSentTime")
+
     if last_sent_time:
         try:
-            last_sent_date = datetime.datetime.fromisoformat(last_sent_time)
-        except Exception as e:
-            print("解析 lastSentTime 失敗：", e)
-            last_sent_date = now - datetime.timedelta(minutes=9999)
-        time_diff = (now - last_sent_date).total_seconds() / 60  # 轉換為分鐘
+            # 確保讀取後轉換成 datetime 物件
+            last_sent_date = datetime.datetime.strptime(last_sent_time, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            print("時間格式錯誤，重置 lastSentTime")
+            last_sent_date = now - datetime.timedelta(hours=3)  # 設定為 3 小時前，避免影響判斷
 
-        # 如果小於 120 分鐘 ，則不發送
-        # 注意：原程式判斷條件為 timeDiff <= 2，雖然註解寫「過去 2 小時內」
-        if time_diff <= 2:
-            print("過去 2 小時內已發送過警報，不重複發送")
+        time_diff = (now - last_sent_date).total_seconds() / 60  # 轉換為分鐘
+        if time_diff <= 300:  # 5 小時內不重複發送
+            print("過去 5 小時內已發送過警報，不重複發送")
             return
+
+    # 更新 lastSentTime 並確保格式統一
+    formatted_last_sent_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    last_sent_info.update({
+        "lastSentTime": formatted_last_sent_time
+    })
+
+    script_properties.set_property("lastSentInfo", last_sent_info)
 
     warning_messages = []
 
@@ -194,15 +264,10 @@ def sendBroadcastMessage():
         "messages": messages
     }
 
-    # 記錄發送時間
-    script_properties.set_property("lastSentTime", now.isoformat())
-
     # 發送 LINE 訊息
     sendLineMessage(message_payload)
 
     sendBroadcastMessage_maximum_accumulated_rainfall()
-
-
 
 
 # --------------------------
@@ -216,7 +281,7 @@ def sendBroadcastMessage():
 #         "Content-Type": "application/json",  # 設定為 JSON 格式
 #         "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN  # 授權使用 Channel Access Token
 #     }
-
+#
 #     try:
 #         # 使用 requests 發送 POST 請求到 LINE API
 #         response = requests.post(LINE_PUSH_URL, headers=headers, json=payload)
@@ -226,8 +291,7 @@ def sendBroadcastMessage():
 #             print("LINE 訊息發送失敗，狀態碼：", response.status_code, response.text)
 #     except Exception as error:
 #         print("LINE 訊息發送失敗：", error)
-
-
+#
 # --------------------------
 # 以下為被註解掉的測試用 log 版本，原本是不會發送 LINE 訊息，只是記錄訊息內容
 # --------------------------
@@ -349,7 +413,6 @@ def sendBroadcastMessage_maximum_accumulated_rainfall():
             "messages": [{"type": "text", "text": text} for text in batch]
         }
         sendLineMessage(payload)  # 發送每一批報告訊息
-
 
 # --------------------------
 # 主程式進入點
