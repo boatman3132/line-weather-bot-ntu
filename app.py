@@ -127,7 +127,7 @@ def get_weather_metadata():
 # 這個函式將會檢查天氣資料並發送警報訊息到 LINE 群組。
 # --------------------------
 def sendBroadcastMessage():
-    now = datetime.datetime.now()
+    now = datetime.datetime.now() + datetime.timedelta(hours=8)
 
     # 讀取上次發送的資訊
     last_sent_info = script_properties.get_property("lastSentInfo")
@@ -285,7 +285,7 @@ def sendBroadcastMessage():
 # 這個函式負責構建訊息並發送到 LINE 的群組。
 # @param payload 要發送的訊息內容
 # --------------------------
-def sendLineMessage(payload):
+# def sendLineMessage(payload):
     # 設定發送 HTTP 請求的參數
     headers = {
         "Content-Type": "application/json",  # 設定為 JSON 格式
