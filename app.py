@@ -285,7 +285,7 @@ def sendBroadcastMessage():
 # 這個函式負責構建訊息並發送到 LINE 的群組。
 # @param payload 要發送的訊息內容
 # --------------------------
-# def sendLineMessage(payload):
+def sendLineMessage(payload):
     # 設定發送 HTTP 請求的參數
     headers = {
         "Content-Type": "application/json",  # 設定為 JSON 格式
