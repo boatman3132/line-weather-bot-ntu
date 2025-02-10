@@ -12,6 +12,9 @@ import json
 import requests
 import datetime
 import time
+from zoneinfo import ZoneInfo
+import pytz
+
 
 # --------------------------
 # 定義共用常數
@@ -19,6 +22,8 @@ import time
 CHANNEL_ACCESS_TOKEN = "DS4xuDmTEm1JdSjB4nicpJSCWEFfkoK71AgNDslimzElHInP/irAjQ0RjeBzZuZ4kk3cZrOyQGYMMA5wnKoML0N+0L9SZSWt3Kuv+1e4QD4c9LuJahduzJ44VGu1wPbbKL6zBe9M7TiCA7nPzJqOxQdB04t89/1O/w1cDnyilFU="
 GROUP_ID = "C538d8773e17d6697fac0175c4077fd73"
 LINE_PUSH_URL = 'https://api.line.me/v2/bot/message/push'
+tz_tw = pytz.timezone('Asia/Taipei')
+
 weather_url = ('https://opendata.cwa.gov.tw/api/v1/rest/datastore/W-C0033-002'
                '?Authorization=CWA-BAD98D16-5AC9-46D7-80AB-F96CB1286F16'
                '&phenomena=%E5%A4%A7%E9%9B%A8,%E8%B1%AA%E9%9B%A8,'
@@ -65,7 +70,7 @@ script_properties = ScriptProperties()
 # 主函式：檢查天氣 API 資料、組合警報訊息、查找圖片並發送 LINE 訊息
 # --------------------------
 def sendBroadcastMessage():
-    now = datetime.datetime.now() + datetime.timedelta(hours=8)
+    now = datetime.datetime.now(ZoneInfo("Asia/Taipei"))
     formatted_now = now.strftime("%Y-%m-%d %H:%M:%S")
 
     # 讀取上次發送的資訊
@@ -80,14 +85,23 @@ def sendBroadcastMessage():
         last_sent_info = {}
 
     last_sent_time = last_sent_info.get("lastSentTime")
+
     if last_sent_time:
         try:
+            # 解析字串為 datetime 物件（仍是 offset-naive）
             last_sent_date = datetime.datetime.strptime(last_sent_time, "%Y-%m-%d %H:%M:%S")
+
+            # 轉換為 offset-aware（加上台灣時區）
+            last_sent_date = tz_tw.localize(last_sent_date)
+
         except ValueError:
             print("時間格式錯誤，重置 lastSentTime")
             last_sent_date = now - datetime.timedelta(hours=3)
+
+        # 計算時間差（現在 - 上次發送時間）
         time_diff = (now - last_sent_date).total_seconds() / 60  # 轉換為分鐘
-        if time_diff <= 780:  # 5 小時內不重複發送
+
+        if time_diff <= 300:  # 5 小時內不重複發送
             print("過去 5 小時內已發送過警報，不重複發送")
             return
 
