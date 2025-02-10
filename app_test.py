@@ -70,8 +70,8 @@ script_properties = ScriptProperties()
 # 主函式：檢查天氣 API 資料、組合警報訊息、查找圖片並發送 LINE 訊息
 # --------------------------
 def sendBroadcastMessage():
-    now = datetime.datetime.now(ZoneInfo("Asia/Taipei"))
-    print(now)
+    #  取得現在時間
+    now = datetime.datetime.now(tz_tw)
     formatted_now = now.strftime("%Y-%m-%d %H:%M:%S")
 
     # 讀取上次發送的資訊
@@ -87,25 +87,50 @@ def sendBroadcastMessage():
 
     last_sent_time = last_sent_info.get("lastSentTime")
 
-    if last_sent_time:
+    # 讀取氣象資訊
+    weatherData = script_properties.get_property("weatherData")
+    if isinstance(weatherData, str):
+        try:
+            weatherData = json.loads(weatherData)
+        except json.JSONDecodeError:
+            weatherData = {}
+    elif weatherData is None:
+        weatherData = {}
+
+    last_update_time = weatherData.get("update")
+    if last_update_time:
         try:
             # 解析字串為 datetime 物件（仍是 offset-naive）
-            last_sent_date = datetime.datetime.strptime(last_sent_time, "%Y-%m-%d %H:%M:%S")
+            last_update_time = datetime.datetime.strptime(last_update_time, "%Y-%m-%d %H:%M:%S")
 
             # 轉換為 offset-aware（加上台灣時區）
-            last_sent_date = tz_tw.localize(last_sent_date)
+            last_update_time = last_update_time.replace(tzinfo=tz_tw)
 
         except ValueError:
-            print("時間格式錯誤，重置 lastSentTime")
-            last_sent_date = now - datetime.timedelta(hours=3)
+            print("時間格式錯誤，重置 update")
+            last_update_time = now - datetime.timedelta(hours=3)
 
-        # 計算時間差（現在 - 上次發送時間）
-        time_diff = (now - last_sent_date).total_seconds() / 60  # 轉換為分鐘
+    # 計算時間差（現在 - 上次發送時間）
+    time_diff = (now - last_update_time).total_seconds() / 60  # 轉換為分鐘
 
-        if time_diff <= 780:  # 5 小時內不重複發送
-            print("過去 5 小時內已發送過警報，不重複發送")
-            return
+    # 新增判斷 lastSentTime 是否在過去 30 分鐘內
+    if last_sent_time:
+        try:
+            last_sent_time = datetime.datetime.strptime(last_sent_time, "%Y-%m-%d %H:%M:%S")
+            last_sent_time = last_sent_time.replace(tzinfo=tz_tw)
+            last_sent_diff = (now - last_sent_time).total_seconds() / 60  # 轉換為分鐘
 
+            if last_sent_diff <= 30:
+                print("過去已發送過警報，不重複發送")
+                return
+        except ValueError:
+            print("lastSentTime 時間格式錯誤，無法進行比較")
+
+    # 原來的 10 分鐘內發送過警報的判斷
+    if time_diff > 10:
+        print("過去已發送過警報，不重複發送")
+        return
+    
     # 更新 lastSentTime
     last_sent_info.update({"lastSentTime": formatted_now})
     script_properties.set_property("lastSentInfo", last_sent_info)
