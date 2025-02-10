@@ -16,29 +16,23 @@ import time
 # --------------------------
 # 定義共用常數
 # --------------------------
-
-# DS4xuDmTEm1JdSjB4nicpJSCWEFfkoK71AgNDslimzElHInP/irAjQ0RjeBzZuZ4kk3cZrOyQGYMMA5wnKoML0N+0L9SZSWt3Kuv+1e4QD4c9LuJahduzJ44VGu1wPbbKL6zBe9M7TiCA7nPzJqOxQdB04t89/1O/w1cDnyilFU= 新的line帳號
-# m7mL7uj+S4utCL4fzeHcz7YebNzUWoncm+jsEcFoqXa3UzEmlgTLaRFyFEshKi6XJeXCth/v4Zj1vGpPxPAPVvSFky7hvMPDncXsmPdnrNgQEjqP4nbixNPeRuXdkY4hKQeQnx9quTC22aDkuIkCTwdB04t89/1O/w1cDnyilFU= 舊的line帳號
-
 CHANNEL_ACCESS_TOKEN = "DS4xuDmTEm1JdSjB4nicpJSCWEFfkoK71AgNDslimzElHInP/irAjQ0RjeBzZuZ4kk3cZrOyQGYMMA5wnKoML0N+0L9SZSWt3Kuv+1e4QD4c9LuJahduzJ44VGu1wPbbKL6zBe9M7TiCA7nPzJqOxQdB04t89/1O/w1cDnyilFU="
-
-# 測試群組id C1744d43a6e011fb9e2819c43974ead95
-# 正式群組id C538d8773e17d6697fac0175c4077fd73
-
 GROUP_ID = "C538d8773e17d6697fac0175c4077fd73"
-
-
 LINE_PUSH_URL = 'https://api.line.me/v2/bot/message/push'
 weather_url = ('https://opendata.cwa.gov.tw/api/v1/rest/datastore/W-C0033-002'
-                '?Authorization=CWA-BAD98D16-5AC9-46D7-80AB-F96CB1286F16'
-                '&phenomena=%E5%A4%A7%E9%9B%A8,%E8%B1%AA%E9%9B%A8,'
-                '%E5%A4%A7%E8%B1%AA%E9%9B%A8,%E8%B6%85%E5%A4%A7%E8%B1%AA%E9%9B%A8')
+               '?Authorization=CWA-BAD98D16-5AC9-46D7-80AB-F96CB1286F16'
+               '&phenomena=%E5%A4%A7%E9%9B%A8,%E8%B1%AA%E9%9B%A8,'
+               '%E5%A4%A7%E8%B1%AA%E9%9B%A8,%E8%B6%85%E5%A4%A7%E8%B1%AA%E9%9B%A8')
+
+# 測試用天氣 API 資料
+# weather_url = ('https://raw.githubusercontent.com/boatman3132/line-weather-bot-ntu/refs/heads/main/test_weather_data.json?token=GHSAT0AAAAAAC25HZ4YYPRHTPXGFUMCP55KZ5JL4DQ')
+
 
 
 
 # --------------------------
 # 定義 ScriptProperties 類別
-# 這個類別負責讀取、寫入 script_properties.json 檔案
+# 此類別負責讀取與寫入同一資料夾內的 script_properties.json 檔案
 # --------------------------
 class ScriptProperties:
     def __init__(self, file_path='script_properties.json'):
@@ -64,78 +58,21 @@ class ScriptProperties:
         except Exception as e:
             print("寫入 properties 檔案失敗：", e)
 
-
 # 建立全域 script_properties 物件
 script_properties = ScriptProperties()
 
-
-def get_weather_metadata():
-    """
-    獲取天氣 API 的元數據，包括：
-    - startTime: 警報開始時間
-    - endTime: 警報結束時間
-    - update: 最新更新時間
-    - affectedLocations: 受影響的地區（列表）
-
-    回傳:
-    - dict: 包含以上數據的字典，如果發生錯誤則回傳 None
-    """
-    try:
-        response = requests.get(weather_url)
-        weather_data = response.json()
-
-        if (weather_data.get("success") == "true" and
-            weather_data.get("records") and
-            weather_data["records"].get("record")):
-            records = weather_data["records"]["record"]
-
-            affected_locations = set()
-            last_start_time = None
-            last_end_time = None
-            last_update_time = None
-
-            for record in records:
-                dataset_info = record.get("datasetInfo", {})
-                last_start_time = dataset_info.get("validTime", {}).get("startTime")
-                last_end_time = dataset_info.get("validTime", {}).get("endTime")
-                last_update_time = dataset_info.get("update")
-
-                hazard_conditions = record.get("hazardConditions", {})
-                if (hazard_conditions and
-                    hazard_conditions.get("hazards") and
-                    hazard_conditions["hazards"].get("hazard")):
-                    hazards = hazard_conditions["hazards"]["hazard"]
-                    for hazard in hazards:
-                        if hazard["info"].get("affectedAreas") and hazard["info"]["affectedAreas"].get("location"):
-                            locations = [loc.get("locationName", "") for loc in hazard["info"]["affectedAreas"]["location"]]
-                            affected_locations.update(locations)
-
-            return {
-                "lastStartTime": last_start_time,
-                "lastEndTime": last_end_time,
-                "lastUpdateTime": last_update_time,
-                "affectedLocations": list(affected_locations)
-            }
-
-    except Exception as error:
-        print("天氣 API 請求失敗：", error)
-        return None
-
-
 # --------------------------
-# 主函式：檢查天氣 API 資料、組合警報訊息、查找各項圖片並發送 LINE 訊息
-# 這個函式將會檢查天氣資料並發送警報訊息到 LINE 群組。
+# 主函式：檢查天氣 API 資料、組合警報訊息、查找圖片並發送 LINE 訊息
 # --------------------------
 def sendBroadcastMessage():
     now = datetime.datetime.now() + datetime.timedelta(hours=8)
+    formatted_now = now.strftime("%Y-%m-%d %H:%M:%S")
 
     # 讀取上次發送的資訊
     last_sent_info = script_properties.get_property("lastSentInfo")
-
-    # 如果 last_sent_info 是字串，則轉換為字典
     if isinstance(last_sent_info, str):
         try:
-            last_sent_info = json.loads(last_sent_info)  # 只有字串才執行解析
+            last_sent_info = json.loads(last_sent_info)
         except json.JSONDecodeError:
             print("lastSentInfo 格式錯誤，重置為空字典")
             last_sent_info = {}
@@ -143,31 +80,24 @@ def sendBroadcastMessage():
         last_sent_info = {}
 
     last_sent_time = last_sent_info.get("lastSentTime")
-
     if last_sent_time:
         try:
-            # 確保讀取後轉換成 datetime 物件
             last_sent_date = datetime.datetime.strptime(last_sent_time, "%Y-%m-%d %H:%M:%S")
         except ValueError:
             print("時間格式錯誤，重置 lastSentTime")
-            last_sent_date = now - datetime.timedelta(hours=3)  # 設定為 3 小時前，避免影響判斷
-
+            last_sent_date = now - datetime.timedelta(hours=3)
         time_diff = (now - last_sent_date).total_seconds() / 60  # 轉換為分鐘
-        if time_diff <= 780 :  # 5 小時內不重複發送
+        if time_diff <= 780:  # 5 小時內不重複發送
             print("過去 5 小時內已發送過警報，不重複發送")
             return
 
-    # 更新 lastSentTime 並確保格式統一
-    formatted_last_sent_time = now.strftime("%Y-%m-%d %H:%M:%S")
-    last_sent_info.update({
-        "lastSentTime": formatted_last_sent_time
-    })
-
+    # 更新 lastSentTime
+    last_sent_info.update({"lastSentTime": formatted_now})
     script_properties.set_property("lastSentInfo", last_sent_info)
 
     warning_messages = []
 
-    # 取得並解析天氣警報資料
+    # 取得並解析天氣警報資料，同時根據取得的 JSON 資料更新 script_properties.json
     try:
         response = requests.get(weather_url)
         weather_data = response.json()
@@ -175,24 +105,74 @@ def sendBroadcastMessage():
         if (weather_data.get("success") == "true" and
             weather_data.get("records") and
             weather_data["records"].get("record")):
+
             records = weather_data["records"]["record"]
 
+            # 取第一筆資料，並從中解析所需欄位
+            first_record = records[0]
+            datasetInfo = first_record.get("datasetInfo", {})
+
+            # 若 issueTime 與 update 缺失或空值，則填入當前時間
+            issueTime = datasetInfo.get("issueTime")
+            if not issueTime:
+                issueTime = formatted_now
+            update_time = datasetInfo.get("update")
+            if not update_time:
+                update_time = formatted_now
+
+            # 解析 hazard 資料取得 phenomena 與 location
+            phenomena = ""
+            locations = []
+            hazard_conditions = first_record.get("hazardConditions", {})
+            if (hazard_conditions and
+                hazard_conditions.get("hazards") and
+                hazard_conditions["hazards"].get("hazard")):
+                hazards = hazard_conditions["hazards"]["hazard"]
+                if hazards:
+                    first_hazard = hazards[0]
+                    phenomena = first_hazard.get("info", {}).get("phenomena")
+                    if not phenomena:
+                        phenomena = "無數據"
+                    affectedAreas = first_hazard.get("info", {}).get("affectedAreas", {})
+                    if affectedAreas and affectedAreas.get("location"):
+                        locations = [loc.get("locationName", "") for loc in affectedAreas["location"] if loc.get("locationName")]
+                    if not locations:
+                        locations = ["無數據"]
+                else:
+                    phenomena = "無數據"
+                    locations = ["無數據"]
+            else:
+                phenomena = "無數據"
+                locations = ["無數據"]
+
+            # 將 lastSentTime、phenomena、location、issueTime 與 update 存入 script_properties.json
+            weather_info = {
+                "lastSentTime": formatted_now,
+                "phenomena": phenomena,
+                "location": locations,
+                "issueTime": issueTime,
+                "update": update_time
+            }
+            script_properties.set_property("weatherData", weather_info)
+
+            # 解析所有符合條件的警報訊息
             for record in records:
-                # 檢查是否有 hazard 資料
                 hazard_conditions = record.get("hazardConditions")
                 if (hazard_conditions and
                     hazard_conditions.get("hazards") and
                     hazard_conditions["hazards"].get("hazard")):
                     hazards = hazard_conditions["hazards"]["hazard"]
                     for hazard in hazards:
-                        phenomenon = hazard["info"]["phenomena"]
-                        content_text = record["contents"]["content"]["contentText"].strip()
-                        # 若沒有 affectedAreas.location 則預設為空陣列
-                        locations = []
-                        if hazard["info"].get("affectedAreas") and hazard["info"]["affectedAreas"].get("location"):
-                            locations = [loc.get("locationName", "") for loc in hazard["info"]["affectedAreas"]["location"]]
+                        phenomenon = hazard.get("info", {}).get("phenomena", "無數據")
+                        content_text = record.get("contents", {}).get("content", {}).get("contentText", "").strip()
+                        locations_msg = []
+                        if (hazard.get("info", {}).get("affectedAreas") and
+                            hazard.get("info", {}).get("affectedAreas").get("location")):
+                            locations_msg = [loc.get("locationName", "") for loc in hazard["info"]["affectedAreas"]["location"]]
+                        if not locations_msg:
+                            locations_msg = ["無數據"]
                         message_text = (f"⚠️ 最新{phenomenon}特報 ⚠️\n{content_text}\n\n"
-                                        f"📍 {phenomenon}特報地區：\n" + "\n".join(locations))
+                                        f"📍 {phenomenon}特報地區：\n" + "\n".join(locations_msg))
                         warning_messages.append(message_text)
     except Exception as error:
         print("天氣 API 請求失敗：", error)
@@ -254,7 +234,6 @@ def sendBroadcastMessage():
             "previewImageUrl": "https://www.cwa.gov.tw/Data/warning/W26_C.png?"
         })
 
-    # 加入圖片訊息（如果有找到圖片）
     if radar_image_url:
         messages.append({
             "type": "image",
@@ -279,21 +258,15 @@ def sendBroadcastMessage():
 
     sendBroadcastMessage_maximum_accumulated_rainfall()
 
-
 # --------------------------
 # 發送 LINE 訊息的共用函式
-# 這個函式負責構建訊息並發送到 LINE 的群組。
-# @param payload 要發送的訊息內容
 # --------------------------
 def sendLineMessage(payload):
-    # 設定發送 HTTP 請求的參數
     headers = {
-        "Content-Type": "application/json",  # 設定為 JSON 格式
-        "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN  # 授權使用 Channel Access Token
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN
     }
-
     try:
-        # 使用 requests 發送 POST 請求到 LINE API
         response = requests.post(LINE_PUSH_URL, headers=headers, json=payload)
         if response.status_code == 200:
             print("LINE 訊息發送成功")
@@ -301,6 +274,7 @@ def sendLineMessage(payload):
             print("LINE 訊息發送失敗，狀態碼：", response.status_code, response.text)
     except Exception as error:
         print("LINE 訊息發送失敗：", error)
+
 
 # --------------------------
 # 以下為被註解掉的測試用 log 版本，原本是不會發送 LINE 訊息，只是記錄訊息內容
@@ -316,7 +290,6 @@ def sendLineMessage(payload):
 
 # --------------------------
 # 發送各縣市最高累積雨量資訊
-# 該函式查詢並發送當前各縣市的降雨量資訊。
 # --------------------------
 def sendBroadcastMessage_maximum_accumulated_rainfall():
     weather_url = ('https://opendata.cwa.gov.tw/api/v1/rest/datastore/W-C0033-001'
@@ -328,7 +301,6 @@ def sendBroadcastMessage_maximum_accumulated_rainfall():
                     '&RainfallElement=Past1hr,Past3hr,Past24hr'
                     '&GeoInfo=CountyName,TownName')
 
-    # 收集有警報的縣市
     alert_counties = set()
 
     try:
@@ -346,7 +318,6 @@ def sendBroadcastMessage_maximum_accumulated_rainfall():
         print("天氣警報 API 請求失敗：", error)
         return
 
-    # 如果沒有警報縣市，則不發送任何訊息
     if len(alert_counties) == 0:
         print("沒有符合條件的警報，不執行任何操作")
         return
@@ -362,7 +333,6 @@ def sendBroadcastMessage_maximum_accumulated_rainfall():
             for station in rainfall_data["records"]["Station"]:
                 county = station["GeoInfo"]["CountyName"]
                 if county in alert_counties:
-                    # 轉為數值型態，避免非數值情況
                     try:
                         past1hr = float(station["RainfallElement"]["Past1hr"]["Precipitation"])
                     except:
@@ -376,7 +346,6 @@ def sendBroadcastMessage_maximum_accumulated_rainfall():
                     except:
                         past24hr = 0
 
-                    # 如果該縣尚未記錄或 24 小時降雨量更高則更新
                     if (county not in highest_rainfall_stations or
                         past24hr > highest_rainfall_stations[county]["past24hr"]):
                         highest_rainfall_stations[county] = {
@@ -391,18 +360,15 @@ def sendBroadcastMessage_maximum_accumulated_rainfall():
         print("雨量 API 請求失敗：", error)
         return
 
-    # 建構報告訊息
     report_messages = []
     for station_data in highest_rainfall_stations.values():
         report_messages.append(f"{station_data['county']} {station_data['town']} {station_data['station']} "
                                f"{station_data['past1hr']}mm {station_data['past3hr']}mm {station_data['past24hr']}mm")
 
-    # 若沒有報告的雨量數據，則不發送任何訊息
     if len(report_messages) == 0:
         print("沒有可報告的雨量數據")
         return
 
-    # 先發送前置訊息
     header_payload = {
         "to": GROUP_ID,
         "messages": [
@@ -414,21 +380,15 @@ def sendBroadcastMessage_maximum_accumulated_rainfall():
     }
     sendLineMessage(header_payload)
 
-    # 將所有報告訊息合併成一個字串
     combined_message = "\n".join(report_messages)
-
-    # 建立 payload
     payload = {
         "to": GROUP_ID,
         "messages": [{"type": "text", "text": combined_message}]
     }
-
-    # 發送合併後的訊息
     sendLineMessage(payload)
 
 # --------------------------
 # 主程式進入點
 # --------------------------
 if __name__ == '__main__':
-    # 可依需求執行 sendBroadcastMessage() 來啟動整個流程
     sendBroadcastMessage()
