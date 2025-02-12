@@ -113,23 +113,9 @@ def sendBroadcastMessage():
     # 計算時間差（現在 - 上次發送時間）
     time_diff = (now - last_update_time).total_seconds() / 60  # 轉換為分鐘
 
-    # 新增判斷 lastSentTime 是否在過去 30 分鐘內
-    if last_sent_time:
-        try:
-            last_sent_time = datetime.datetime.strptime(last_sent_time, "%Y-%m-%d %H:%M:%S")
-            last_sent_time = last_sent_time.replace(tzinfo=tz_tw)
-            last_sent_diff = (now - last_sent_time).total_seconds() / 60  # 轉換為分鐘
 
-            if last_sent_diff <= 30:
-                print("過去已發送過警報，不重複發送")
-                return
-        except ValueError:
-            print("lastSentTime 時間格式錯誤，無法進行比較")
 
-    # 原來的 10 分鐘內發送過警報的判斷
-    if time_diff > 10:
-        print("過去已發送過警報，不重複發送")
-        return
+
 
     # 更新 lastSentTime
     last_sent_info.update({"lastSentTime": formatted_now})
@@ -301,31 +287,31 @@ def sendBroadcastMessage():
 # --------------------------
 # 發送 LINE 訊息的共用函式
 # --------------------------
-def sendLineMessage(payload):
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN
-    }
-    try:
-        response = requests.post(LINE_PUSH_URL, headers=headers, json=payload)
-        if response.status_code == 200:
-            print("LINE 訊息發送成功")
-        else:
-            print("LINE 訊息發送失敗，狀態碼：", response.status_code, response.text)
-    except Exception as error:
-        print("LINE 訊息發送失敗：", error)
+# def sendLineMessage(payload):
+#     headers = {
+#         "Content-Type": "application/json",
+#         "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN
+#     }
+#     try:
+#         response = requests.post(LINE_PUSH_URL, headers=headers, json=payload)
+#         if response.status_code == 200:
+#             print("LINE 訊息發送成功")
+#         else:
+#             print("LINE 訊息發送失敗，狀態碼：", response.status_code, response.text)
+#     except Exception as error:
+#         print("LINE 訊息發送失敗：", error)
 
 
 # --------------------------
 # 以下為被註解掉的測試用 log 版本，原本是不會發送 LINE 訊息，只是記錄訊息內容
 # --------------------------
-# def sendLineMessage(payload):
-#     # 遍歷所有訊息，記錄內容
-#     for message in payload.get("messages", []):
-#         if message.get("type") == "text":
-#             print("[訊息內容] " + message.get("text", ""))
-#         elif message.get("type") == "image":
-#             print("[圖片網址] " + message.get("originalContentUrl", ""))
+def sendLineMessage(payload):
+    # 遍歷所有訊息，記錄內容
+    for message in payload.get("messages", []):
+        if message.get("type") == "text":
+            print("[訊息內容] " + message.get("text", ""))
+        elif message.get("type") == "image":
+            print("[圖片網址] " + message.get("originalContentUrl", ""))
 
 
 # --------------------------
