@@ -34,7 +34,6 @@ weather_url = ('https://raw.githubusercontent.com/boatman3132/line-weather-bot-n
 
 
 
-
 # --------------------------
 # 定義 ScriptProperties 類別
 # 此類別負責讀取與寫入同一資料夾內的 script_properties.json 檔案
@@ -126,11 +125,8 @@ def sendBroadcastMessage():
         except ValueError:
             print("lastSentTime 時間格式錯誤，無法進行比較")
 
-    # 原來的 10 分鐘內發送過警報的判斷
-    if time_diff > 10:
-        print("過去已發送過警報，不重複發送")
-        return
-    
+
+
     # 更新 lastSentTime
     last_sent_info.update({"lastSentTime": formatted_now})
     script_properties.set_property("lastSentInfo", last_sent_info)
@@ -301,19 +297,19 @@ def sendBroadcastMessage():
 # --------------------------
 # 發送 LINE 訊息的共用函式
 # --------------------------
-def sendLineMessage(payload):
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN
-    }
-    try:
-        response = requests.post(LINE_PUSH_URL, headers=headers, json=payload)
-        if response.status_code == 200:
-            print("LINE 訊息發送成功")
-        else:
-            print("LINE 訊息發送失敗，狀態碼：", response.status_code, response.text)
-    except Exception as error:
-        print("LINE 訊息發送失敗：", error)
+# def sendLineMessage(payload):
+#     headers = {
+#         "Content-Type": "application/json",
+#         "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN
+#     }
+#     try:
+#         response = requests.post(LINE_PUSH_URL, headers=headers, json=payload)
+#         if response.status_code == 200:
+#             print("LINE 訊息發送成功")
+#         else:
+#             print("LINE 訊息發送失敗，狀態碼：", response.status_code, response.text)
+#     except Exception as error:
+#         print("LINE 訊息發送失敗：", error)
 
 
 # --------------------------

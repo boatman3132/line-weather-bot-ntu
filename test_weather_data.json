@@ -1,107 +1,104 @@
 {
-    "success": "true",
-    "result": {
-      "resource_id": "W-C0033-002",
-      "fields": [
-        {
-          "id": "datasetDescription",
-          "type": "String"
-        },
-        {
-          "id": "datasetLanguage",
-          "type": "String"
-        },
-        {
-          "id": "issueTime",
-          "type": "Timestamp"
-        },
-        {
-          "id": "startTime",
-          "type": "Timestamp"
-        },
-        {
-          "id": "endTime",
-          "type": "Timestamp"
-        },
-        {
-          "id": "update",
-          "type": "Timestamp"
-        },
-        {
-          "id": "contentLanguage",
-          "type": "String"
-        },
-        {
-          "id": "contentText",
-          "type": "String"
-        },
-        {
-          "id": "language",
-          "type": "String"
-        },
-        {
-          "id": "phenomena",
-          "type": "String"
-        },
-        {
-          "id": "significance",
-          "type": "String"
-        },
-        {
-          "id": "locationName",
-          "type": "String"
-        }
-      ]
-    },
-    "records": {
-      "record": [
-        {
-          "datasetInfo": {
-            "datasetDescription": "大雨特報",
-            "datasetLanguage": "zh-TW",
-            "validTime": {
-              "startTime": "2025-02-03 10:28:00",
-              "endTime": "2025-02-03 23:00:00"
-            },
-            "issueTime": "2025-02-03 10:25:00",
-            "update": "2025-02-03 10:33:03"
+  "success": "true",
+  "result": {
+    "resource_id": "W-C0033-002",
+    "fields": [
+      {
+        "id": "datasetDescription",
+        "type": "String"
+      },
+      {
+        "id": "datasetLanguage",
+        "type": "String"
+      },
+      {
+        "id": "issueTime",
+        "type": "Timestamp"
+      },
+      {
+        "id": "startTime",
+        "type": "Timestamp"
+      },
+      {
+        "id": "endTime",
+        "type": "Timestamp"
+      },
+      {
+        "id": "update",
+        "type": "Timestamp"
+      },
+      {
+        "id": "contentLanguage",
+        "type": "String"
+      },
+      {
+        "id": "contentText",
+        "type": "String"
+      },
+      {
+        "id": "language",
+        "type": "String"
+      },
+      {
+        "id": "phenomena",
+        "type": "String"
+      },
+      {
+        "id": "significance",
+        "type": "String"
+      },
+      {
+        "id": "locationName",
+        "type": "String"
+      }
+    ]
+  },
+  "records": {
+    "record": [
+      {
+        "datasetInfo": {
+          "datasetDescription": "大雨特報",
+          "datasetLanguage": "zh-TW",
+          "validTime": {
+            "startTime": "2025-02-12 21:32:00",
+            "endTime": "2025-02-13 06:00:00"
           },
-          "contents": {
-            "content": {
-              "contentLanguage": "zh-TW",
-              "contentText": "\n                東北風影響，今（３）日基隆北海岸及大臺北、宜蘭山區有局部大雨發生的機率，請注意瞬間大雨，山區慎防坍方及落石。\n                "
-            }
-          },
-          "hazardConditions": {
-            "hazards": {
-              "hazard": [
-                {
-                  "info": {
-                    "language": "zh-TW",
-                    "phenomena": "大雨",
-                    "significance": "特報",
-                    "affectedAreas": {
-                      "location": [
-                        {
-                          "locationName": "基隆北海岸"
-                        },
-                        {
-                          "locationName": "臺北市山區"
-                        },
-                        {
-                          "locationName": "新北市山區"
-                        },
-                        {
-                          "locationName": "宜蘭縣山區"
-                        }
-                      ]
-                    }
+          "issueTime": "2025-02-12 21:30:00",
+          "update": "2025-02-12 21:36:19"
+        },
+        "contents": {
+          "content": {
+            "contentLanguage": "zh-TW",
+            "contentText": "\n                南方雲系及鋒面影響，今（１２）日至明（１３）日南投、嘉義及高雄山區有局部大雨發生的機率，請注意。\n                "
+          }
+        },
+        "hazardConditions": {
+          "hazards": {
+            "hazard": [
+              {
+                "info": {
+                  "language": "zh-TW",
+                  "phenomena": "大雨",
+                  "significance": "特報",
+                  "affectedAreas": {
+                    "location": [
+                      {
+                        "locationName": "南投縣山區"
+                      },
+                      {
+                        "locationName": "嘉義縣山區"
+                      },
+                      {
+                        "locationName": "高雄市山區"
+                      }
+                    ]
                   }
                 }
-              ]
-            }
+              }
+            ]
           }
         }
-      ]
-    }
-  }  
+      }
+    ]
+  }
+}
