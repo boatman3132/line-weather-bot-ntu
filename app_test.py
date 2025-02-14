@@ -127,6 +127,9 @@ def sendBroadcastMessage():
 
             if last_sent_diff <= 30:
                 print("過去已發送過警報，不重複發送")
+                # 更新 lastSentTime
+                last_sent_info.update({"lastSentTime": formatted_now})
+                script_properties.set_property("lastSentInfo", last_sent_info)
                 return
         except ValueError:
             print("lastSentTime 時間格式錯誤，無法進行比較")
