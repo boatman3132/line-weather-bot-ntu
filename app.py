@@ -69,8 +69,9 @@ script_properties = ScriptProperties()
 # --------------------------
 # 主函式：檢查天氣 API 資料、組合警報訊息、查找圖片並發送 LINE 訊息
 # --------------------------
+
 def sendBroadcastMessage():
-    #  取得現在時間
+    # 取得現在時間
     now = datetime.datetime.now(tz_tw)
     formatted_now = now.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -102,10 +103,8 @@ def sendBroadcastMessage():
         try:
             # 解析字串為 datetime 物件（仍是 offset-naive）
             last_update_time = datetime.datetime.strptime(last_update_time, "%Y-%m-%d %H:%M:%S")
-
             # 轉換為 offset-aware（加上台灣時區）
             last_update_time = last_update_time.replace(tzinfo=tz_tw)
-
         except ValueError:
             print("時間格式錯誤，重置 update")
             last_update_time = now - datetime.timedelta(hours=3)
@@ -122,11 +121,12 @@ def sendBroadcastMessage():
 
             if last_sent_diff <= 30:
                 print("過去已發送過警報，不重複發送")
+                # 更新 lastSentTime
+                last_sent_info.update({"lastSentTime": formatted_now})
+                script_properties.set_property("lastSentInfo", last_sent_info)
                 return
         except ValueError:
             print("lastSentTime 時間格式錯誤，無法進行比較")
-
-
 
     # 更新 lastSentTime
     last_sent_info.update({"lastSentTime": formatted_now})
@@ -182,6 +182,23 @@ def sendBroadcastMessage():
                 phenomena = "無數據"
                 locations = ["無數據"]
 
+            # 新增功能：比對舊的與新的警報區域
+            # 若先前的 weatherData 有設定過 location，則進行比對
+            old_locations = weatherData.get("location", [])
+            if old_locations:
+                added_locations = list(set(locations) - set(old_locations))
+                removed_locations = list(set(old_locations) - set(locations))
+                change_message = ""
+                if added_locations:
+                    change_message += "新增警報區域：" + ", ".join(added_locations)
+                if removed_locations:
+                    if change_message:
+                        change_message += "\n"
+                    change_message += "減少警報區域：" + ", ".join(removed_locations)
+                if change_message:
+                    # 將變化訊息放在警報訊息的最前面
+                    warning_messages.insert(0, change_message)
+
             # 將 lastSentTime、phenomena、location、issueTime 與 update 存入 script_properties.json
             weather_info = {
                 "lastSentTime": formatted_now,
@@ -209,6 +226,7 @@ def sendBroadcastMessage():
                         if not locations_msg:
                             locations_msg = ["無數據"]
                         message_text = (f"⚠️ 最新{phenomenon}特報 ⚠️\n{content_text}\n\n"
+                                        f"特報發佈時間：{update_time}\n\n"
                                         f"📍 {phenomenon}特報地區：\n" + "\n".join(locations_msg))
                         warning_messages.append(message_text)
     except Exception as error:
@@ -295,44 +313,42 @@ def sendBroadcastMessage():
 
     sendBroadcastMessage_maximum_accumulated_rainfall()
 
+
 # --------------------------
 # 發送 LINE 訊息的共用函式
 # --------------------------
-def sendLineMessage(payload):
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN
-    }
-    try:
-        response = requests.post(LINE_PUSH_URL, headers=headers, json=payload)
-        if response.status_code == 200:
-            print("LINE 訊息發送成功")
-        else:
-            print("LINE 訊息發送失敗，狀態碼：", response.status_code, response.text)
-    except Exception as error:
-        print("LINE 訊息發送失敗：", error)
+# def sendLineMessage(payload):
+#     headers = {
+#         "Content-Type": "application/json",
+#         "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN
+#     }
+#     try:
+#         response = requests.post(LINE_PUSH_URL, headers=headers, json=payload)
+#         if response.status_code == 200:
+#             print("LINE 訊息發送成功")
+#         else:
+#             print("LINE 訊息發送失敗，狀態碼：", response.status_code, response.text)
+#     except Exception as error:
+#         print("LINE 訊息發送失敗：", error)
 
 
 # --------------------------
 # 以下為被註解掉的測試用 log 版本，原本是不會發送 LINE 訊息，只是記錄訊息內容
 # --------------------------
-# def sendLineMessage(payload):
-#     # 遍歷所有訊息，記錄內容
-#     for message in payload.get("messages", []):
-#         if message.get("type") == "text":
-#             print("[訊息內容] " + message.get("text", ""))
-#         elif message.get("type") == "image":
-#             print("[圖片網址] " + message.get("originalContentUrl", ""))
+def sendLineMessage(payload):
+    # 遍歷所有訊息，記錄內容
+    for message in payload.get("messages", []):
+        if message.get("type") == "text":
+            print("[訊息內容] " + message.get("text", ""))
+        elif message.get("type") == "image":
+            print("[圖片網址] " + message.get("originalContentUrl", ""))
 
 
 # --------------------------
 # 發送各縣市最高累積雨量資訊
 # --------------------------
 def sendBroadcastMessage_maximum_accumulated_rainfall():
-    weather_url = ('https://opendata.cwa.gov.tw/api/v1/rest/datastore/W-C0033-001'
-                   '?Authorization=CWA-BAD98D16-5AC9-46D7-80AB-F96CB1286F16'
-                   '&phenomena=%E5%A4%A7%E9%9B%A8,%E8%B1%AA%E9%9B%A8,'
-                   '%E5%A4%A7%E8%B1%AA%E9%9B%A8,%E8%B6%85%E5%A4%A7%E8%B1%AA%E9%9B%A8')
+
     rainfall_url = ('https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0002-001'
                     '?Authorization=CWA-BAD98D16-5AC9-46D7-80AB-F96CB1286F16'
                     '&RainfallElement=Past1hr,Past3hr,Past24hr'
@@ -341,7 +357,7 @@ def sendBroadcastMessage_maximum_accumulated_rainfall():
     alert_counties = set()
 
     try:
-        response = requests.get(weather_url)
+        response = requests.get(weather_location_url)
         weather_data = response.json()
         if (weather_data.get("success") == "true" and
             weather_data.get("records") and
@@ -397,25 +413,15 @@ def sendBroadcastMessage_maximum_accumulated_rainfall():
         print("雨量 API 請求失敗：", error)
         return
 
-    report_messages = []
+    report_messages = ['當地1小時/3小時/24小時累積雨量']
     for station_data in highest_rainfall_stations.values():
         report_messages.append(f"{station_data['county']} {station_data['town']} {station_data['station']} "
-                               f"{station_data['past1hr']}mm {station_data['past3hr']}mm {station_data['past24hr']}mm")
+                               f"{station_data['past1hr']}mm/{station_data['past3hr']}mm/{station_data['past24hr']}mm")
 
     if len(report_messages) == 0:
         print("沒有可報告的雨量數據")
         return
 
-    header_payload = {
-        "to": GROUP_ID,
-        "messages": [
-            {
-                "type": "text",
-                "text": "當地1小時/3小時/24小時累積雨量"
-            }
-        ]
-    }
-    sendLineMessage(header_payload)
 
     combined_message = "\n".join(report_messages)
     payload = {
