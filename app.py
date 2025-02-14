@@ -317,31 +317,31 @@ def sendBroadcastMessage():
 # --------------------------
 # 發送 LINE 訊息的共用函式
 # --------------------------
-# def sendLineMessage(payload):
-#     headers = {
-#         "Content-Type": "application/json",
-#         "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN
-#     }
-#     try:
-#         response = requests.post(LINE_PUSH_URL, headers=headers, json=payload)
-#         if response.status_code == 200:
-#             print("LINE 訊息發送成功")
-#         else:
-#             print("LINE 訊息發送失敗，狀態碼：", response.status_code, response.text)
-#     except Exception as error:
-#         print("LINE 訊息發送失敗：", error)
+def sendLineMessage(payload):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN
+    }
+    try:
+        response = requests.post(LINE_PUSH_URL, headers=headers, json=payload)
+        if response.status_code == 200:
+            print("LINE 訊息發送成功")
+        else:
+            print("LINE 訊息發送失敗，狀態碼：", response.status_code, response.text)
+    except Exception as error:
+        print("LINE 訊息發送失敗：", error)
 
 
 # --------------------------
 # 以下為被註解掉的測試用 log 版本，原本是不會發送 LINE 訊息，只是記錄訊息內容
 # --------------------------
-def sendLineMessage(payload):
-    # 遍歷所有訊息，記錄內容
-    for message in payload.get("messages", []):
-        if message.get("type") == "text":
-            print("[訊息內容] " + message.get("text", ""))
-        elif message.get("type") == "image":
-            print("[圖片網址] " + message.get("originalContentUrl", ""))
+# def sendLineMessage(payload):
+#     # 遍歷所有訊息，記錄內容
+#     for message in payload.get("messages", []):
+#         if message.get("type") == "text":
+#             print("[訊息內容] " + message.get("text", ""))
+#         elif message.get("type") == "image":
+#             print("[圖片網址] " + message.get("originalContentUrl", ""))
 
 
 # --------------------------
