@@ -29,6 +29,13 @@ weather_url = ('https://opendata.cwa.gov.tw/api/v1/rest/datastore/W-C0033-002'
                '&phenomena=%E5%A4%A7%E9%9B%A8,%E8%B1%AA%E9%9B%A8,'
                '%E5%A4%A7%E8%B1%AA%E9%9B%A8,%E8%B6%85%E5%A4%A7%E8%B1%AA%E9%9B%A8')
 
+
+
+weather_location_url = ('https://opendata.cwa.gov.tw/api/v1/rest/datastore/W-C0033-001'
+                   '?Authorization=CWA-BAD98D16-5AC9-46D7-80AB-F96CB1286F16'
+                   '&phenomena=%E5%A4%A7%E9%9B%A8,%E8%B1%AA%E9%9B%A8,'
+                   '%E5%A4%A7%E8%B1%AA%E9%9B%A8,%E8%B6%85%E5%A4%A7%E8%B1%AA%E9%9B%A8')
+
 # 測試用天氣 API 資料
 # weather_url = ('https://raw.githubusercontent.com/boatman3132/line-weather-bot-ntu/refs/heads/main/test_weather_data.json?token=GHSAT0AAAAAAC25HZ4YYPRHTPXGFUMCP55KZ5JL4DQ')
 
