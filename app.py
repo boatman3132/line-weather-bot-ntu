@@ -40,8 +40,6 @@ weather_location_url = ('https://opendata.cwa.gov.tw/api/v1/rest/datastore/W-C00
 # weather_url = ('https://raw.githubusercontent.com/boatman3132/line-weather-bot-ntu/refs/heads/main/test_weather_data.json?token=GHSAT0AAAAAAC25HZ4YYPRHTPXGFUMCP55KZ5JL4DQ')
 
 
-
-
 # --------------------------
 # 定義 ScriptProperties 類別
 # 此類別負責讀取與寫入同一資料夾內的 script_properties.json 檔案
@@ -287,38 +285,55 @@ def sendBroadcastMessage():
         attempt_time = attempt_time - datetime.timedelta(minutes=10)
 
     # 建構 LINE 訊息內容
-    messages = [{"type": "text", "text": text} for text in warning_messages]
-
+    # 建構 LINE 訊息內容，將所有警報文字訊息合併成一個
+    
+    # 將所有警報文字訊息合併成一個
+    if warning_messages:
+        combined_warning_text = "\n\n".join(warning_messages)
+    else:
+        combined_warning_text = ""
+    
+    # 取得累積雨量報告訊息（改成回傳字串的函式）
+    rainfall_report_text = getMaximumAccumulatedRainfallReport()
+    
+    # 將兩個文字訊息合併
+    if combined_warning_text and rainfall_report_text:
+        final_text = combined_warning_text + "\n\n" + rainfall_report_text
+    else:
+        final_text = combined_warning_text or rainfall_report_text
+    
+    # 建構 LINE 訊息內容
+    messages = []
+    if final_text:
+        messages.append({"type": "text", "text": final_text})
+    
+    # 若有圖片，也照原本方式加入
     if warning_image_url:
         messages.append({
             "type": "image",
             "originalContentUrl": "https://www.cwa.gov.tw/Data/warning/W26_C.png?",
             "previewImageUrl": "https://www.cwa.gov.tw/Data/warning/W26_C.png?"
         })
-
     if radar_image_url:
         messages.append({
             "type": "image",
             "originalContentUrl": radar_image_url,
             "previewImageUrl": radar_image_url
         })
-
     if warning_image_url:
         messages.append({
             "type": "image",
             "originalContentUrl": warning_image_url,
             "previewImageUrl": warning_image_url
         })
-
+    
     message_payload = {
         "to": GROUP_ID,
         "messages": messages
     }
-
-    # 發送 LINE 訊息
+    
     sendLineMessage(message_payload)
 
-    sendBroadcastMessage_maximum_accumulated_rainfall()
 
 
 # --------------------------
@@ -354,8 +369,8 @@ def sendLineMessage(payload):
 # --------------------------
 # 發送各縣市最高累積雨量資訊
 # --------------------------
-def sendBroadcastMessage_maximum_accumulated_rainfall():
 
+def getMaximumAccumulatedRainfallReport():
     rainfall_url = ('https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0002-001'
                     '?Authorization=CWA-BAD98D16-5AC9-46D7-80AB-F96CB1286F16'
                     '&RainfallElement=Past1hr,Past3hr,Past24hr'
@@ -376,11 +391,11 @@ def sendBroadcastMessage_maximum_accumulated_rainfall():
                     alert_counties.add(location.get("locationName"))
     except Exception as error:
         print("天氣警報 API 請求失敗：", error)
-        return
+        return ""
 
     if len(alert_counties) == 0:
         print("沒有符合條件的警報，不執行任何操作")
-        return
+        return ""
 
     highest_rainfall_stations = {}
 
@@ -418,7 +433,7 @@ def sendBroadcastMessage_maximum_accumulated_rainfall():
                         }
     except Exception as error:
         print("雨量 API 請求失敗：", error)
-        return
+        return ""
 
     report_messages = ['當地1小時/3小時/24小時累積雨量']
     for station_data in highest_rainfall_stations.values():
@@ -427,15 +442,11 @@ def sendBroadcastMessage_maximum_accumulated_rainfall():
 
     if len(report_messages) == 0:
         print("沒有可報告的雨量數據")
-        return
-
+        return ""
 
     combined_message = "\n".join(report_messages)
-    payload = {
-        "to": GROUP_ID,
-        "messages": [{"type": "text", "text": combined_message}]
-    }
-    sendLineMessage(payload)
+    return combined_message
+
 
 # --------------------------
 # 主程式進入點
