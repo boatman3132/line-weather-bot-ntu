@@ -1,9 +1,9 @@
 {
     "lastSentInfo": {
-        "lastSentTime": "2025-03-04 02:00:14"
+        "lastSentTime": "2025-03-04 03:28:14"
     },
     "weatherData": {
-        "lastSentTime": "2025-03-04 01:58:16",
+        "lastSentTime": "2025-03-04 03:28:14",
         "phenomena": "大雨",
         "location": [
             "基隆北海岸",
@@ -15,7 +15,7 @@
             "苗栗縣",
             "臺中市"
         ],
-        "issueTime": "2025-03-04 01:15:00",
-        "update": "2025-03-04 01:55:57"
+        "issueTime": "2025-03-04 03:20:00",
+        "update": "2025-03-04 03:25:47"
     }
 }
