@@ -1,9 +1,9 @@
 {
     "lastSentInfo": {
-        "lastSentTime": "2025-03-04 21:37:13"
+        "lastSentTime": "2025-03-04 22:42:15"
     },
     "weatherData": {
-        "lastSentTime": "2025-03-04 21:35:15",
+        "lastSentTime": "2025-03-04 22:42:15",
         "phenomena": "大雨",
         "location": [
             "基隆北海岸",
@@ -29,6 +29,6 @@
             "澎湖縣"
         ],
         "issueTime": "2025-03-04 21:25:00",
-        "update": "2025-03-04 21:32:33"
+        "update": "2025-03-04 22:39:33"
     }
 }
