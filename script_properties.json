@@ -1,14 +1,14 @@
 {
     "lastSentInfo": {
-        "lastSentTime": "2025-03-05 15:10:13"
+        "lastSentTime": "2025-03-05 23:41:17"
     },
     "weatherData": {
-        "lastSentTime": "2025-03-05 15:07:14",
-        "phenomena": "豪雨",
+        "lastSentTime": "2025-03-05 23:41:17",
+        "phenomena": "大雨",
         "location": [
-            "臺中市山區"
+            "基隆北海岸"
         ],
-        "issueTime": "2025-03-05 15:00:00",
-        "update": "2025-03-05 15:05:11"
+        "issueTime": "2025-03-05 23:30:00",
+        "update": "2025-03-05 23:38:40"
     }
 }
