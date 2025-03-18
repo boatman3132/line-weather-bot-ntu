@@ -19,7 +19,7 @@ import pytz
 # --------------------------
 # 定義共用常數
 # --------------------------
-CHANNEL_ACCESS_TOKEN = "DS4xuDmTEm1JdSjB4nicpJSCWEFfkoK71AgNDslimzElHInP/irAjQ0RjeBzZuZ4kk3cZrOyQGYMMA5wnKoML0N+0L9SZSWt3Kuv+1e4QD4c9LuJahduzJ44VGu1wPbbKL6zBe9M7TiCA7nPzJqOxQdB04t89/1O/w1cDnyilFU="
+CHANNEL_ACCESS_TOKEN = "m7mL7uj+S4utCL4fzeHcz7YebNzUWoncm+jsEcFoqXa3UzEmlgTLaRFyFEshKi6XJeXCth/v4Zj1vGpPxPAPVvSFky7hvMPDncXsmPdnrNgQEjqP4nbixNPeRuXdkY4hKQeQnx9quTC22aDkuIkCTwdB04t89/1O/w1cDnyilFU="
 GROUP_ID = "C538d8773e17d6697fac0175c4077fd73"
 LINE_PUSH_URL = 'https://api.line.me/v2/bot/message/push'
 tz_tw = pytz.timezone('Asia/Taipei')
@@ -115,23 +115,23 @@ def sendBroadcastMessage():
             last_update_time = now - datetime.timedelta(hours=3)
 
     # 計算時間差（現在 - 上次發送時間）
-    time_diff = (now - last_update_time).total_seconds() / 60  # 轉換為分鐘
+    # time_diff = (now - last_update_time).total_seconds() / 60  # 轉換為分鐘
 
-    # 新增判斷 lastSentTime 是否在過去 30 分鐘內
-    if last_sent_time:
-        try:
-            last_sent_time = datetime.datetime.strptime(last_sent_time, "%Y-%m-%d %H:%M:%S")
-            last_sent_time = last_sent_time.replace(tzinfo=tz_tw)
-            last_sent_diff = (now - last_sent_time).total_seconds() / 60  # 轉換為分鐘
+    # 判斷 lastSentTime 是否在過去 30 分鐘內
+    # if last_sent_time:
+    #     try:
+    #         last_sent_time = datetime.datetime.strptime(last_sent_time, "%Y-%m-%d %H:%M:%S")
+    #         last_sent_time = last_sent_time.replace(tzinfo=tz_tw)
+    #         last_sent_diff = (now - last_sent_time).total_seconds() / 60  # 轉換為分鐘
 
-            if last_sent_diff <= 30:
-                print("過去已發送過警報，不重複發送")
-                # 更新 lastSentTime
-                last_sent_info.update({"lastSentTime": formatted_now})
-                script_properties.set_property("lastSentInfo", last_sent_info)
-                return
-        except ValueError:
-            print("lastSentTime 時間格式錯誤，無法進行比較")
+    #         if last_sent_diff <= 30:
+    #             print("過去已發送過警報，不重複發送")
+    #             # 更新 lastSentTime
+    #             last_sent_info.update({"lastSentTime": formatted_now})
+    #             script_properties.set_property("lastSentInfo", last_sent_info)
+    #             return
+    #     except ValueError:
+    #         print("lastSentTime 時間格式錯誤，無法進行比較")
 
     # 更新 lastSentTime
     last_sent_info.update({"lastSentTime": formatted_now})
@@ -187,8 +187,7 @@ def sendBroadcastMessage():
                 phenomena = "無數據"
                 locations = ["無數據"]
 
-            # 新增功能：比對舊的與新的警報區域
-            # 若先前的 weatherData 有設定過 location，則進行比對
+            # 比對舊的與新的警報區域，若先前的 weatherData 有設定過 location，則進行比對
             old_locations = weatherData.get("location", [])
             if old_locations:
                 added_locations = list(set(locations) - set(old_locations))
@@ -283,17 +282,14 @@ def sendBroadcastMessage():
             break
 
         attempt_time = attempt_time - datetime.timedelta(minutes=10)
-
-    # 建構 LINE 訊息內容
-    # 建構 LINE 訊息內容，將所有警報文字訊息合併成一個
-    
+        
     # 將所有警報文字訊息合併成一個
     if warning_messages:
         combined_warning_text = "\n\n".join(warning_messages)
     else:
         combined_warning_text = ""
     
-    # 取得累積雨量報告訊息（改成回傳字串的函式）
+    # 取得累積雨量報告訊息（回傳字串）
     rainfall_report_text = getMaximumAccumulatedRainfallReport()
     
     # 將兩個文字訊息合併
@@ -301,7 +297,15 @@ def sendBroadcastMessage():
         final_text = combined_warning_text + "\n\n" + rainfall_report_text
     else:
         final_text = combined_warning_text or rainfall_report_text
-    
+
+    # 新增檢查：若接收到的大雨特報內容與上次儲存的內容完全一致，則不發送訊息
+    lastMessage = script_properties.get_property("lastMessage")
+    if isinstance(lastMessage, str) and lastMessage == final_text:
+        print("大雨特報內容未變化，不重複發送訊息")
+        return
+    # 更新儲存的訊息內容
+    script_properties.set_property("lastMessage", final_text)
+
     # 建構 LINE 訊息內容
     messages = []
     if final_text:
@@ -339,31 +343,31 @@ def sendBroadcastMessage():
 # --------------------------
 # 發送 LINE 訊息的共用函式
 # --------------------------
-def sendLineMessage(payload):
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN
-    }
-    try:
-        response = requests.post(LINE_PUSH_URL, headers=headers, json=payload)
-        if response.status_code == 200:
-            print("LINE 訊息發送成功")
-        else:
-            print("LINE 訊息發送失敗，狀態碼：", response.status_code, response.text)
-    except Exception as error:
-        print("LINE 訊息發送失敗：", error)
+# def sendLineMessage(payload):
+#     headers = {
+#         "Content-Type": "application/json",
+#         "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN
+#     }
+#     try:
+#         response = requests.post(LINE_PUSH_URL, headers=headers, json=payload)
+#         if response.status_code == 200:
+#             print("LINE 訊息發送成功")
+#         else:
+#             print("LINE 訊息發送失敗，狀態碼：", response.status_code, response.text)
+#     except Exception as error:
+#         print("LINE 訊息發送失敗：", error)
 
 
 # --------------------------
 # 以下為被註解掉的測試用 log 版本，原本是不會發送 LINE 訊息，只是記錄訊息內容
 # --------------------------
-# def sendLineMessage(payload):
-#     # 遍歷所有訊息，記錄內容
-#     for message in payload.get("messages", []):
-#         if message.get("type") == "text":
-#             print("[訊息內容] " + message.get("text", ""))
-#         elif message.get("type") == "image":
-#             print("[圖片網址] " + message.get("originalContentUrl", ""))
+def sendLineMessage(payload):
+    # 遍歷所有訊息，記錄內容
+    for message in payload.get("messages", []):
+        if message.get("type") == "text":
+            print("[訊息內容] " + message.get("text", ""))
+        elif message.get("type") == "image":
+            print("[圖片網址] " + message.get("originalContentUrl", ""))
 
 
 # --------------------------
