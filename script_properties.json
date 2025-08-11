@@ -1,15 +1,15 @@
 {
     "lastSentInfo": {
-        "lastSentTime": "2025-08-11 00:53:33"
+        "lastSentTime": "2025-08-12 00:53:33"
     },
     "weatherData": {
-        "lastSentTime": "2025-08-11 00:53:33",
+        "lastSentTime": "2025-08-12 00:53:33",
         "phenomena": "無數據",
         "location": [
             "無數據"
         ],
-        "issueTime": "2025-08-10 19:35:00",
-        "update": "2025-08-11 00:10:01"
+        "issueTime": "2025-08-11 21:00:00",
+        "update": "2025-08-11 21:10:47"
     },
     "lastMessage": "新增警報區域：無數據\n減少警報區域：嘉義縣山區, 南投縣"
 }
